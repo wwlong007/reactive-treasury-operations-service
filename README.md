@@ -47,6 +47,8 @@ Business requests require an authenticated JWT. The JWT subject identifies the a
 
 Operational and documentation routes configured as public, including health and OpenAPI routes, remain usable without a JWT. An authenticated request whose JWT has no usable `tenant_id` is rejected with HTTP 401 before tenant business handling. At the data boundary, missing identity may be rejected before SQL or safely produce no visible tenant rows with writes rejected by RLS; it must never select a default tenant or inherit identity from earlier traffic.
 
+Payment processing may hold an outer transaction while an independent compliance audit is pending. Cancellation while several such operations are waiting for database capacity must release the requests and leave the next tenant's payment work usable; this is part of the runtime safety contract, not a caller retry requirement.
+
 ## API compatibility
 
 The `/api/v1` representation, status codes, JWT claim name, database schema and payment state machine are compatibility boundaries. Changes require an ADR and a versioned migration.

@@ -22,5 +22,6 @@ The database identity used for a request must continue to represent that request
 - Integration tests require PostgreSQL; an in-memory database cannot validate the security boundary.
 - Cancellation and resource reuse must be included in isolation testing.
 - Independent audit work must preserve the request's tenant attribution.
+- When outer payment work is suspended around independent audit work, cancellation and pool exhaustion must not strand the outer database resources or affect a later request.
 - Public health and API-documentation routes must not be blocked merely because they have no JWT principal. An authenticated JWT with a missing or unusable tenant claim is rejected before tenant business processing.
 - Operators can inspect `pg_class`, `pg_policy` and role attributes to verify controls.

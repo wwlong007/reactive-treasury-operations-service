@@ -31,5 +31,5 @@ public class R2dbcConfiguration {
     }
     @Bean @Primary ConnectionFactory tenantConnectionFactory(ConnectionPool pool) { return new TenantAwareConnectionFactory(pool); }
     @Bean DatabaseClient databaseClient(ConnectionFactory connectionFactory) { return DatabaseClient.create(connectionFactory); }
-    @Bean ReactiveTransactionManager transactionManager(ConnectionFactory connectionFactory) { return new R2dbcTransactionManager(connectionFactory); }
+    @Bean ReactiveTransactionManager transactionManager(ConnectionPool pool) { return new R2dbcTransactionManager(pool); }
 }
