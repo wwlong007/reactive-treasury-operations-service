@@ -6,7 +6,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.util.Objects;
 
-/** Applies the legacy PostgreSQL tenant session setting when a pooled connection is borrowed. */
+/** Associates the database session used by repositories with the request tenant. */
 public final class TenantAwareConnectionFactory implements ConnectionFactory {
     private final ConnectionFactory delegate;
     public TenantAwareConnectionFactory(ConnectionFactory delegate) { this.delegate = Objects.requireNonNull(delegate); }
