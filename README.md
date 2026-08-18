@@ -43,7 +43,9 @@ See [the operations runbook](docs/operations.md) for production diagnostics and 
 
 ## Security model
 
-Every request must be authenticated. The JWT subject identifies the actor and `tenant_id` selects the tenant. Four business tables have forced RLS with symmetric `USING` and `WITH CHECK` policies. The application role is deliberately neither a superuser nor a `BYPASSRLS` role. Do not weaken database policies to work around application integration problems.
+Business requests require an authenticated JWT. The JWT subject identifies the actor and `tenant_id` selects the tenant. Four business tables have forced RLS with symmetric `USING` and `WITH CHECK` policies. The application role is deliberately neither a superuser nor a `BYPASSRLS` role. Do not weaken database policies to work around application integration problems.
+
+Operational and documentation routes configured as public, including health and OpenAPI routes, remain usable without a JWT. An authenticated request whose JWT has no usable `tenant_id` is rejected with HTTP 401 before tenant business handling. At the data boundary, missing identity may be rejected before SQL or safely produce no visible tenant rows with writes rejected by RLS; it must never select a default tenant or inherit identity from earlier traffic.
 
 ## API compatibility
 

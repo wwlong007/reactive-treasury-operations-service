@@ -15,11 +15,12 @@ PostgreSQL row-level security is forced on all tenant-owned tables. The authenti
 
 Schema migrations run as `treasury_owner`. Runtime SQL runs as `treasury_app`, which has no ownership, superuser, role creation, or RLS bypass privileges. Application repositories do not add tenant predicates as a substitute for RLS.
 
-The database identity used for a request must continue to represent that request across reactive execution, nested business operations and pooled resource reuse. Missing tenant identity is an authentication failure, never a default tenant selection, and one request must never inherit identity left by another request.
+The database identity used for a request must continue to represent that request across reactive execution, nested business operations and pooled resource reuse. Missing tenant identity is an authentication failure, never a default tenant selection, and one request must never inherit identity left by another request. At the database boundary this may be enforced by denying access before SQL or by RLS returning no rows and rejecting writes; either outcome is acceptable only when no tenant data is disclosed or changed.
 
 ## Consequences
 
 - Integration tests require PostgreSQL; an in-memory database cannot validate the security boundary.
 - Cancellation and resource reuse must be included in isolation testing.
 - Independent audit work must preserve the request's tenant attribution.
+- Public health and API-documentation routes must not be blocked merely because they have no JWT principal. An authenticated JWT with a missing or unusable tenant claim is rejected before tenant business processing.
 - Operators can inspect `pg_class`, `pg_policy` and role attributes to verify controls.
