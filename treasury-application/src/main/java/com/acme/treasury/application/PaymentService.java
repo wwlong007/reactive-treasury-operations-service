@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
@@ -50,7 +51,9 @@ public class PaymentService {
 
     @Transactional
     public Mono<PaymentInstruction> decide(PaymentCommands.Decide command) {
-        return Mono.zip(tenants.currentTenant(), actors.currentActor(), payments.findById(command.paymentId())
+        var paymentSnapshot = payments.findById(command.paymentId()).cache()
+                .switchIfEmpty(Mono.error(new PaymentNotFound(command.paymentId())));
+        return Mono.zip(tenants.currentTenant(), actors.currentActor(), paymentSnapshot
                         .switchIfEmpty(Mono.error(new PaymentNotFound(command.paymentId()))))
                 .flatMap(tuple -> approvals.exists(command.paymentId(), tuple.getT2()).flatMap(exists -> {
                     if (exists) return Mono.error(new DomainConflict("actor already decided this payment"));
@@ -61,6 +64,7 @@ public class PaymentService {
                     var updated = command.decision() == PaymentCommands.Decision.APPROVE
                             ? tuple.getT3().approve(clock.instant()) : tuple.getT3().reject(clock.instant());
                     return approvals.insert(record).then(payments.update(updated))
+                            .retryWhen(Retry.max(1))
                             .flatMap(saved -> audit.record("PAYMENT_" + domainDecision, "PAYMENT", saved.id(), tuple.getT2(),
                                     Map.of("status", saved.status().name())).thenReturn(saved));
                 }));
@@ -71,4 +75,3 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public Flux<PaymentInstruction> list(int limit, int offset) { return tenants.currentTenant().thenMany(payments.findAll(limit, offset)); }
 }
-

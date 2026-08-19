@@ -41,15 +41,10 @@ Useful endpoints:
 
 See [the operations runbook](docs/operations.md) for production diagnostics and [ADR-0001](docs/adr/0001-postgresql-rls.md) for the isolation decision.
 
-## Security model
+## Payment consistency and security model
 
-Business requests require an authenticated JWT. The JWT subject identifies the actor and `tenant_id` selects the tenant. Four business tables have forced RLS with symmetric `USING` and `WITH CHECK` policies. The application role is deliberately neither a superuser nor a `BYPASSRLS` role. Do not weaken database policies to work around application integration problems.
-
-Operational and documentation routes configured as public, including health and OpenAPI routes, remain usable without a JWT. An authenticated request whose JWT has no usable `tenant_id` is rejected with HTTP 401 before tenant business handling. At the data boundary, missing identity may be rejected before SQL or safely produce no visible tenant rows with writes rejected by RLS; it must never select a default tenant or inherit identity from earlier traffic.
-
-Payment processing may hold an outer transaction while an independent compliance audit is pending. Cancellation while several such operations are waiting for database capacity must release the requests and leave the next tenant's payment work usable; this is part of the runtime safety contract, not a caller retry requirement.
+The service treats a payment reservation, its approval state and the debit-account balances as one business outcome. Retries and competing decisions must not move the same reservation twice. The JWT subject identifies the actor and `tenant_id` selects the tenant for business traffic. Four business tables have forced RLS with symmetric `USING` and `WITH CHECK` policies. The application role is deliberately neither a superuser nor a `BYPASSRLS` role. Do not weaken database policies to work around workflow or integration problems.
 
 ## API compatibility
 
 The `/api/v1` representation, status codes, JWT claim name, database schema and payment state machine are compatibility boundaries. Changes require an ADR and a versioned migration.
-

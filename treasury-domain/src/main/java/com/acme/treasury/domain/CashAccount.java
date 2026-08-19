@@ -22,5 +22,5 @@ public record CashAccount(UUID id, TenantId tenantId, String accountReference, S
         return new CashAccount(id, tenantId, accountReference, displayName, availableBalance.subtract(amount),
                 reservedBalance.add(amount), status, version + 1, createdAt, now);
     }
-}
 
+}
